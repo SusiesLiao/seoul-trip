@@ -104,9 +104,18 @@
     .hero{padding:30px 24px}.hero:after{font-size:72px}
     .grid{grid-template-columns:1fr}.day{grid-template-columns:1fr;gap:14px}.datebox{border-right:0;border-bottom:1px solid var(--line);padding:0 0 14px}.date{font-size:38px}
   }
+  .sync-status{display:inline-block;margin-left:6px;padding:2px 9px;border-radius:999px;background:var(--sage-soft);color:#3d4b3f;font-weight:700;font-size:11px}
+  .sync-status.warn{background:var(--rose-soft);color:#75514f}
+  .code-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(32,33,31,.28);z-index:50}
+  .code-modal.open{display:flex}
+  .code-card{background:var(--cream);border:1px solid var(--line);border-radius:24px;padding:26px;max-width:340px;width:100%;box-shadow:var(--shadow)}
+  .code-card h2{font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:26px;margin:0 0 6px}
+  .code-card input{width:100%;margin:14px 0 6px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#fff;font-size:22px;letter-spacing:.4em;text-align:center;color:var(--ink)}
+  .code-card .err{min-height:18px;font-size:12px;color:#75514f}
+  .code-card .row{display:flex;gap:10px;margin-top:10px}
   @page{size:A4;margin:12mm}
   @media print{
-    button,.edit-hint{display:none!important}
+    button,.edit-hint,.code-modal{display:none!important}
     body{background:white;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .wrap{max-width:none;padding:0}
     .hero,.card,.day{box-shadow:none}
@@ -132,9 +141,8 @@
       <button onclick="window.print()">Save as PDF</button>
       <button class="secondary" onclick="downloadHTML()">Download editable HTML</button>
       <button class="secondary" onclick="copyShare()">Copy page text</button>
-      <button class="secondary" onclick="resetEdits()">Reset edits</button>
     </div>
-    <div class="edit-hint">Click any text to edit it. Your current edits are included when you choose <strong>Download editable HTML</strong> or <strong>Save as PDF</strong>.</div>
+    <div class="edit-hint">Tap any text to edit it — changes save and sync for everyone with this link. <span class="sync-status" id="syncStatus">Connecting…</span></div>
   </header>
 
   <section class="section grid">
@@ -238,6 +246,15 @@
 
   <div class="footer" contenteditable="true">Seoul · Oct 2–6, 2026 · made for the group chat ✨</div>
 </div>
+<div class="code-modal" id="codeModal" role="dialog" aria-modal="true" aria-labelledby="codeTitle">
+  <form class="code-card" id="codeForm">
+    <h2 id="codeTitle">Group code</h2>
+    <div class="small">Enter the 4-digit code from the group chat to edit. You only need to do this once on this device.</div>
+    <input id="codeInput" inputmode="numeric" autocomplete="off" maxlength="4" pattern="[0-9]*" aria-label="Group code">
+    <div class="err" id="codeErr"></div>
+    <div class="row"><button type="submit">Unlock editing</button><button type="button" class="secondary" id="codeCancel">Just viewing</button></div>
+  </form>
+</div>
 <script>
 function downloadHTML(){
   const clone=document.documentElement.cloneNode(true);
@@ -256,33 +273,118 @@ function downloadHTML(){
 }
 function copyShare(){
   const clone=document.body.cloneNode(true);
-  clone.querySelectorAll('button,.edit-hint').forEach(el=>el.remove());
+  clone.querySelectorAll('button,.edit-hint,.code-modal').forEach(el=>el.remove());
   navigator.clipboard.writeText(clone.innerText.trim()).then(()=>{
     const btn=[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Copy'));
     if(btn){const old=btn.textContent;btn.textContent='Copied ✓';setTimeout(()=>btn.textContent=old,1400)}
   });
 }
+// ---- Live sync: shared edits for everyone with the link ----
+// Storage: Supabase project desfa-demo, isolated schema `seoul_trip`, reached only via public.seoul_trip_* functions.
+// To move the data: see pack_up.sql, then change SYNC_URL / SYNC_KEY below.
+const SYNC_URL='https://vlrbqezmwdobwzushyxu.supabase.co';
+const SYNC_KEY='sb_publishable_WO2PsCES7CSXSYJ7pPLsyg_Qs7z-n9H';
+const CODE_KEY='seoul-trip-group-code';
+const POLL_MS=5000;
+const fields=[...document.querySelectorAll('[contenteditable="true"]')];
+fields.forEach((el,i)=>{el.dataset.syncKey='f'+i;});
+const byKey=Object.fromEntries(fields.map(el=>[el.dataset.syncKey,el]));
+const pending={};   // key -> text waiting to be saved
+const timers={};
+let saving=0, offline=false, lastFocus=null;
 
-// Autosave: edits persist in this browser only (localStorage).
-const SAVE_KEY='seoul-trip-edits-v1';
-function editables(){return [...document.querySelectorAll('[contenteditable="true"]')];}
-function saveEdits(){
-  try{localStorage.setItem(SAVE_KEY,JSON.stringify(editables().map(el=>el.innerHTML)));}catch(e){}
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}
+let groupCode=lsGet(CODE_KEY);
+
+async function rpc(fn,body){
+  const r=await fetch(SYNC_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':SYNC_KEY,'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
 }
-function restoreEdits(){
+function setStatus(text,warn){const s=document.getElementById('syncStatus');if(!s)return;s.textContent=text;s.classList.toggle('warn',!!warn);}
+function refreshStatus(){
+  if(offline) return setStatus('Offline — will retry',true);
+  if(saving||Object.keys(pending).length) return setStatus('Saving…');
+  setStatus(groupCode?'Synced ✓':'Synced · view only');
+}
+function textOf(el){return el.innerText.replace(/\n+$/,'');}
+
+async function pull(){
   try{
-    const saved=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
-    const els=editables();
-    if(Array.isArray(saved)&&saved.length===els.length){els.forEach((el,i)=>{el.innerHTML=saved[i];});}
-  }catch(e){}
+    const rows=await rpc('seoul_trip_get');
+    offline=false;
+    rows.forEach(r=>{
+      const el=byKey[r.key];
+      if(!el||el===document.activeElement||r.key in pending) return;
+      if(textOf(el)!==r.body) el.textContent=r.body;
+    });
+  }catch(e){offline=true;}
+  await flush();
+  refreshStatus();
 }
-function resetEdits(){
-  if(!confirm('Discard your saved edits and go back to the published version?'))return;
-  try{localStorage.removeItem(SAVE_KEY);}catch(e){}
-  location.reload();
+
+async function flush(){
+  for(const key of Object.keys(pending)){
+    const text=pending[key];
+    saving++; refreshStatus();
+    try{
+      const ts=await rpc('seoul_trip_save',{p_code:groupCode,p_key:key,p_body:text});
+      offline=false;
+      if(ts===null){ // wrong code (or too many wrong tries)
+        groupCode=null; lsSet(CODE_KEY,null);
+        openCode('That code didn’t work. Check the group chat and try again.');
+        saving--; return;
+      }
+      if(pending[key]===text) delete pending[key];
+    }catch(e){offline=true; saving--; refreshStatus(); return;}
+    saving--;
+  }
+  refreshStatus();
 }
-restoreEdits();
-document.addEventListener('input',e=>{if(e.target.closest&&e.target.closest('[contenteditable="true"]'))saveEdits();});
+
+function queueSave(el){
+  const key=el.dataset.syncKey;
+  pending[key]=textOf(el);
+  refreshStatus();
+  clearTimeout(timers[key]);
+  timers[key]=setTimeout(()=>{ if(groupCode) flush(); },700);
+}
+
+// ---- group code gate ----
+const modal=document.getElementById('codeModal');
+function openCode(msg){
+  document.getElementById('codeErr').textContent=msg||'';
+  document.getElementById('codeInput').value='';
+  modal.classList.add('open');
+  setTimeout(()=>document.getElementById('codeInput').focus(),30);
+}
+function closeCode(){modal.classList.remove('open');}
+document.getElementById('codeCancel').addEventListener('click',()=>{closeCode();lastFocus=null;});
+document.getElementById('codeForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const code=document.getElementById('codeInput').value.trim();
+  if(!/^[0-9]{4}$/.test(code)){document.getElementById('codeErr').textContent='Please enter 4 digits.';return;}
+  document.getElementById('codeErr').textContent='Checking…';
+  try{
+    const ok=await rpc('seoul_trip_check_code',{p_code:code});
+    if(!ok){document.getElementById('codeErr').textContent='That code didn’t work. Check the group chat.';return;}
+    groupCode=code; lsSet(CODE_KEY,code); closeCode(); refreshStatus();
+    await flush();
+    if(lastFocus){const el=lastFocus;lastFocus=null;el.focus();}
+  }catch(err){document.getElementById('codeErr').textContent='Can’t reach the server right now. Try again in a moment.';}
+});
+
+fields.forEach(el=>{
+  el.addEventListener('focus',()=>{ if(!groupCode){lastFocus=el; el.blur(); openCode();} });
+  el.addEventListener('input',()=>queueSave(el));
+  el.addEventListener('blur',()=>{ const k=el.dataset.syncKey; if(k in pending&&groupCode){clearTimeout(timers[k]);flush();} });
+});
+
+pull();
+setInterval(()=>{ if(document.visibilityState==='visible') pull(); },POLL_MS);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') pull(); });
+window.addEventListener('online',pull);
 </script>
 
 
