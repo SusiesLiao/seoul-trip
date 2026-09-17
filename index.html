@@ -104,18 +104,9 @@
     .hero{padding:30px 24px}.hero:after{font-size:72px}
     .grid{grid-template-columns:1fr}.day{grid-template-columns:1fr;gap:14px}.datebox{border-right:0;border-bottom:1px solid var(--line);padding:0 0 14px}.date{font-size:38px}
   }
-  .sync-status{display:inline-block;margin-left:6px;padding:2px 9px;border-radius:999px;background:var(--sage-soft);color:#3d4b3f;font-weight:700;font-size:11px}
-  .sync-status.warn{background:var(--rose-soft);color:#75514f}
-  .code-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(32,33,31,.28);z-index:50}
-  .code-modal.open{display:flex}
-  .code-card{background:var(--cream);border:1px solid var(--line);border-radius:24px;padding:26px;max-width:340px;width:100%;box-shadow:var(--shadow)}
-  .code-card h2{font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:26px;margin:0 0 6px}
-  .code-card input{width:100%;margin:14px 0 6px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#fff;font-size:22px;letter-spacing:.4em;text-align:center;color:var(--ink)}
-  .code-card .err{min-height:18px;font-size:12px;color:#75514f}
-  .code-card .row{display:flex;gap:10px;margin-top:10px}
   @page{size:A4;margin:12mm}
   @media print{
-    button,.edit-hint,.code-modal{display:none!important}
+    button,.edit-hint{display:none!important}
     body{background:white;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .wrap{max-width:none;padding:0}
     .hero,.card,.day{box-shadow:none}
@@ -125,17 +116,141 @@
     .day{margin-bottom:0}
   }
 </style>
+<style>
+  /* ---------- v2 additions: lists, categories, timeline ---------- */
+  [data-key]:empty::before{content:attr(data-placeholder);color:#b3ada3;font-style:italic}
+  .sync-status{display:inline-block;margin-left:6px;padding:2px 9px;border-radius:999px;background:var(--sage-soft);color:#3d4b3f;font-weight:700;font-size:11px}
+  .sync-status.warn{background:var(--rose-soft);color:#75514f}
+
+  .icon{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+  .icon.sm{width:14px;height:14px}
+
+  button.icon-btn{appearance:none;background:transparent;border:1px solid transparent;color:var(--muted);width:32px;height:32px;padding:0;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:none}
+  button.icon-btn:hover,button.icon-btn:focus-visible{background:#f1ece3;border-color:var(--line);color:var(--ink);outline:none}
+  button.add-btn{appearance:none;width:100%;background:transparent;color:var(--sage);border:1.5px dashed #cfd6ce;border-radius:14px;padding:11px 14px;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:none;margin-top:10px}
+  button.add-btn:hover{background:rgba(220,227,220,.35);border-color:var(--sage)}
+
+  .map-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:8px;font-size:12.5px;color:#5f5d58}
+  .map-row .addr{display:inline-flex;align-items:center;gap:4px;margin-right:2px}
+  a.map-link{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:#fffdf8;color:#4c5f71;font-size:11.5px;font-weight:700;text-decoration:none}
+  a.map-link:hover{border-color:#8fa9c0;background:#eef2f6}
+  a.map-link .dotn{width:7px;height:7px;border-radius:50%;background:#7fa38a}
+  a.map-link .dotg{width:7px;height:7px;border-radius:50%;background:#8fa9c0}
+
+  /* who's where */
+  .party{position:relative}
+  .party .p-body{flex:1;min-width:0}
+  .party .p-stay{display:flex;align-items:center;gap:5px;font-size:13px;color:#4c5f71;margin-top:2px}
+  .party .p-actions{margin-left:auto}
+
+  /* flights */
+  .flight-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+  .flight{position:relative;background:#faf7f1;border-radius:18px;padding:14px 16px;border-left:3px solid var(--c-flight)}
+  .flight .f-top{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+  .flight .who{padding:2px 9px;border-radius:999px;background:var(--s-flight);color:var(--i-flight);font-weight:800;font-size:11px;letter-spacing:.04em}
+  .flight .route{font-size:19px;font-weight:700;margin:6px 0 2px;letter-spacing:-.01em}
+  .flight .f-actions{position:absolute;top:8px;right:8px}
+
+  /* itinerary header + legend */
+  .itin-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:34px 4px 14px}
+  .itin-head h2{font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:34px;margin:0}
+  .legend{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{display:inline-flex;align-items:center;gap:5px;padding:4px 9px 4px 6px;border-radius:999px;font-size:11.5px;font-weight:700;background:var(--soft);color:var(--ink-c)}
+  .chip .icon{width:14px;height:14px;color:var(--col)}
+
+  /* day */
+  .day{align-items:start}
+  .day.today{border-color:#8fa9c0;box-shadow:0 0 0 3px rgba(143,169,192,.22),0 10px 32px rgba(53,48,42,.06)}
+  .today-badge{display:none;margin-top:10px;padding:3px 9px;border-radius:999px;background:#e4eaf0;color:#4c5f71;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+  .day.today .today-badge{display:inline-block}
+  .day-sum{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--muted);margin:-4px 0 12px}
+  .day-sum .dots{display:inline-flex;gap:3px}
+  .day-sum .dots i{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+  /* timeline */
+  .tl{position:relative;display:grid;gap:10px}
+  .tl::before{content:"";position:absolute;left:calc(var(--tcol) + 12px + 17px - 1px);top:14px;bottom:14px;width:2px;background:linear-gradient(var(--line),var(--line))}
+  .tl{--tcol:66px}
+  .tl-item{display:grid;grid-template-columns:var(--tcol) 34px minmax(0,1fr);gap:12px;align-items:start}
+  .tl-time{text-align:right;padding-top:5px;line-height:1.1}
+  .tl-time .t{font-family:Georgia,"Times New Roman",serif;font-size:21px;color:var(--ink);letter-spacing:-.01em}
+  .tl-time .e{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .tl-time .dur{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:700;color:#6b7280;background:#efebe4;border-radius:999px;padding:1px 6px}
+  .tl-time .part{display:inline-flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#8a857c;padding-top:3px}
+  .tl-time .part .icon{width:15px;height:15px;color:#b3ada3}
+  .tl-time .any{font-size:11px;color:#b3ada3;padding-top:8px;display:inline-block}
+  .tl-node{position:relative;z-index:1;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--soft);color:var(--ink-c);border:2px solid #fffdf8;box-shadow:0 0 0 1px var(--col)}
+  .tl-card{position:relative;background:#fffdf8;border:1px solid rgba(120,112,100,.13);border-left:3px solid var(--col);border-radius:14px;padding:10px 12px 11px 14px}
+  .tl-card .cat{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-c)}
+  .tl-head{display:flex;align-items:center;gap:8px;min-height:24px;margin:-2px -4px 0 0}
+  .tl-head .tin{display:none;font-size:12.5px;font-weight:700;color:var(--ink)}
+  .tl-head .tin .tsub{font-weight:600;color:var(--muted)}
+  .tl-card .ttl{font-weight:700;font-size:15.5px;line-height:1.35;margin-top:2px}
+  .tl-card .nts{font-size:13px;color:#6b675f;margin-top:3px;white-space:pre-line}
+  .tl-actions{margin-left:auto;display:flex;gap:0}
+  .tl-actions .icon-btn{width:30px;height:28px}
+  .now-line{grid-column:1 / -1;display:grid;grid-template-columns:var(--tcol) 1fr;gap:12px;align-items:center;margin:-2px 0}
+  .now-line .lbl{text-align:right;font-size:11px;font-weight:800;color:#a36f6f;letter-spacing:.04em}
+  .now-line .bar{height:2px;background:linear-gradient(90deg,#c9a0a0,rgba(201,160,160,0));position:relative}
+  .now-line .bar::before{content:"";position:absolute;left:calc(17px - 5px);top:-4px;width:10px;height:10px;border-radius:50%;background:#c9a0a0}
+  .day-note{margin-top:12px}
+  .empty-day{font-size:13px;color:var(--muted);padding:8px 0 0}
+
+  /* modals */
+  .modal{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center;padding:16px;background:rgba(32,33,31,.28);z-index:50}
+  .modal.open{display:flex}
+  @media(min-width:640px){.modal{align-items:center}}
+  .sheet{background:var(--cream);border:1px solid var(--line);border-radius:24px;padding:22px;max-width:520px;width:100%;max-height:calc(100vh - 32px);overflow:auto;box-shadow:var(--shadow)}
+  .sheet h2{font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:26px;margin:0 0 6px}
+  .fld{margin-top:12px}
+  .fld label{display:block;font-size:12px;font-weight:700;color:#5f5d58;margin-bottom:5px}
+  .fld input,.fld select,.fld textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;font-size:15px;color:var(--ink)}
+  .fld textarea{min-height:74px;resize:vertical}
+  .fld .hint{font-size:11.5px;color:var(--muted);margin-top:4px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:10px}
+  @media(max-width:420px){.row3{grid-template-columns:1fr 1fr}.row3 .fld:last-child{grid-column:1 / -1}}
+  .cat-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}
+  button.cat-opt{appearance:none;display:flex;align-items:center;gap:6px;padding:8px 9px;border-radius:12px;border:1.5px solid transparent;background:var(--soft);color:var(--ink-c);font-size:12px;font-weight:700;box-shadow:none;text-align:left}
+  button.cat-opt .icon{color:var(--ink-c)}
+  button.cat-opt[aria-pressed="true"]{border-color:var(--col);background:#fffdf8;box-shadow:0 0 0 2px var(--soft)}
+  .sheet .err{min-height:18px;font-size:12px;color:#75514f;margin-top:10px}
+  .sheet .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+  .sheet .btns .spacer{flex:1}
+  button.danger{background:transparent;color:#8a5a5a;border:1px solid #e3cfcf}
+  button.danger.armed{background:#b88f8b;color:#fff;border-color:#b88f8b}
+  .code-input{letter-spacing:.4em;text-align:center;font-size:22px!important}
+
+  @media(max-width:760px){
+    .tl::before{left:16px}
+    .tl-item{grid-template-columns:34px minmax(0,1fr);gap:10px}
+    .tl-time{display:none}
+    .tl-head .tin{display:inline}
+    .map-row .addr{flex-basis:100%}
+    .now-line{grid-template-columns:34px 1fr;gap:10px}
+    .now-line .lbl{order:2;text-align:left}
+    .now-line .bar{order:1;grid-column:1 / -1;grid-row:1}
+    .now-line .bar::before{left:12px}
+    .itin-head h2{font-size:28px}
+  }
+  @media print{
+    .no-print,.modal,.tl-actions,.p-actions,.f-actions,.add-btn,.map-link{display:none!important}
+    [data-key]:empty::before{content:""}
+    .tl-card{break-inside:avoid}
+    .now-line{display:none!important}
+  }
+</style>
 </head>
 <body>
 <div class="wrap">
   <header class="hero">
-    <div class="eyebrow" contenteditable="true">Friends &amp; family escape</div>
-    <h1 contenteditable="true">Seoul, together.</h1>
-    <div class="sub" contenteditable="true">Five days of cafés, shopping, Seoul neighborhoods, a little beauty maintenance, and just enough swimming to keep the children happy.</div>
+    <div class="eyebrow" contenteditable="true" data-key="hero_eyebrow">Friends &amp; family escape</div>
+    <h1 contenteditable="true" data-key="hero_title">Seoul, together.</h1>
+    <div class="sub" contenteditable="true" data-key="hero_sub">Five days of cafés, shopping, Seoul neighborhoods, a little beauty maintenance, and just enough swimming to keep the children happy.</div>
     <div class="hero-meta">
-      <div class="pill" contenteditable="true">Oct 2–6, 2026</div>
-      <div class="pill" contenteditable="true">Seoul, South Korea</div>
-      <div class="pill" contenteditable="true">Susan · Loubna · Gloria · Hyeyeon + families</div>
+      <div class="pill" contenteditable="true" data-key="pill_dates">Oct 2–6, 2026</div>
+      <div class="pill" contenteditable="true" data-key="pill_place">Seoul, South Korea</div>
+      <div class="pill" contenteditable="true" data-key="pill_people">Susan · Loubna · Gloria · Hyeyeon + families</div>
     </div>
     <div class="toolbar">
       <button onclick="window.print()">Save as PDF</button>
@@ -147,119 +262,63 @@
 
   <section class="section grid">
     <div class="card">
-      <h2 contenteditable="true">Who’s where</h2>
-      <div class="party-list">
-        <div class="party"><span class="dot"></span><div><strong contenteditable="true">Susan’s family</strong><div class="small" contenteditable="true">Grand Hyatt Seoul · arrives Oct 2 · MU5041 PVG 09:10 → ICN 11:55</div></div></div>
-        <div class="party"><span class="dot"></span><div><strong contenteditable="true">Loubna’s family</strong><div class="small" contenteditable="true">Grand Hyatt Seoul · arrives Oct 3</div></div></div>
-        <div class="party"><span class="dot"></span><div><strong contenteditable="true">Gloria’s family</strong><div class="small" contenteditable="true">Josun · arrives Oct 3 · MU511 SHA 08:05 → GMP 11:00</div></div></div>
-        <div class="party"><span class="dot"></span><div><strong contenteditable="true">Hyeyeon’s family</strong><div class="small" contenteditable="true">Lives in Seoul · our local guide 💅</div></div></div>
-      </div>
+      <h2 contenteditable="true" data-key="who_title">Who’s where</h2>
+      <div class="party-list" id="peopleList"></div>
+      <button class="add-btn no-copy" data-add="people"></button>
     </div>
     <div class="card hotel">
-      <h2 contenteditable="true">Grand Hyatt room note</h2>
-      <div contenteditable="true">Adjacent / connecting room request has been sent for Susan &amp; Loubna. Awaiting hotel confirmation.</div>
-      <div class="small" style="margin-top:10px" contenteditable="true">Status: awaiting reply</div>
+      <h2 contenteditable="true" data-key="hotel_title">Grand Hyatt room note</h2>
+      <div contenteditable="true" data-key="hotel_body">Adjacent / connecting room request has been sent for Susan &amp; Loubna. Awaiting hotel confirmation.</div>
+      <div class="small" style="margin-top:10px" contenteditable="true" data-key="hotel_status">Status: awaiting reply</div>
     </div>
   </section>
 
-  <section class="section grid">
+  <section class="section">
     <div class="card">
-      <h2 contenteditable="true">Susan · flights</h2>
-      <div class="small" contenteditable="true">Fri Oct 2 · China Eastern MU5041</div>
-      <div style="font-size:20px;font-weight:700;margin:8px 0" contenteditable="true">PVG T1 09:10 → ICN T1 11:55</div>
-      <div class="small" contenteditable="true">Tue Oct 6 · Seoul → Shanghai · 16:20–17:30</div>
-      <div class="note" style="margin-top:10px" contenteditable="true">Return airport and flight number are not visible in the screenshot yet.</div>
-    </div>
-    <div class="card">
-      <h2 contenteditable="true">Gloria · flights</h2>
-      <div class="small" contenteditable="true">Sat Oct 3 · China Eastern MU511</div>
-      <div style="font-size:20px;font-weight:700;margin:8px 0" contenteditable="true">SHA 08:05 → GMP 11:00</div>
-      <div class="small" contenteditable="true">Tue Oct 6 · China Eastern MU512</div>
-      <div style="font-size:20px;font-weight:700;margin:8px 0" contenteditable="true">GMP 12:00 → SHA 12:55</div>
+      <h2 contenteditable="true" data-key="flights_title">Flights</h2>
+      <div class="flight-grid" id="flightList"></div>
+      <button class="add-btn no-copy" data-add="flights"></button>
     </div>
   </section>
 
-  <section class="section itinerary">
-    <article class="day">
-      <div class="datebox"><div class="dow" contenteditable="true">Friday</div><div class="date" contenteditable="true">02</div><div class="month" contenteditable="true">October 2026</div></div>
-      <div><h3 contenteditable="true">Susan arrives · soft landing</h3>
-        <div class="flow"><span class="stop" contenteditable="true">Grand Hyatt check-in</span><span class="stop rose" contenteditable="true">Itaewon / Hannam dinner</span></div>
-        <ul>
-          <li contenteditable="true">Susan’s family: MU5041 from Shanghai Pudong (PVG T1) 09:10 → Incheon (ICN T1) 11:55.</li>
-          <li contenteditable="true">Transfer to Grand Hyatt Seoul; check-in is after 3:00 PM.</li>
-          <li contenteditable="true">Keep dinner easy and close to the hotel — Itaewon or Hannam.</li>
-          <li contenteditable="true">Gloria and Loubna arrive the following day.</li>
-        </ul>
-      </div>
-    </article>
+  <div class="itin-head">
+    <h2 contenteditable="true" data-key="itin_title">Day by day</h2>
+    <div class="legend no-copy" id="legend" aria-label="Category key"></div>
+  </div>
+  <section class="itinerary" id="days"></section>
 
-    <article class="day">
-      <div class="datebox"><div class="dow" contenteditable="true">Saturday</div><div class="date" contenteditable="true">03</div><div class="month" contenteditable="true">October 2026</div></div>
-      <div><h3 contenteditable="true">Day 1 · full group</h3>
-        <div class="flow"><span class="stop" contenteditable="true">Onion café</span><span class="stop" contenteditable="true">Seoul Forest</span><span class="stop" contenteditable="true">Seongsu</span><span class="stop rose" contenteditable="true">Grand Hyatt swim</span><span class="stop rose" contenteditable="true">Dinner</span></div>
-        <ul>
-          <li contenteditable="true">Loubna arrives and checks in at Grand Hyatt Seoul.</li>
-          <li contenteditable="true">Gloria’s family: MU511 from Shanghai Hongqiao (SHA) 08:05 → Gimpo (GMP) 11:00, then checks in at Josun.</li>
-          <li contenteditable="true">Meet when everyone is ready; Hyeyeon guides the day.</li>
-          <li contenteditable="true">Gloria meets the group at Onion / Seongsu rather than shuttling between Josun and Grand Hyatt.</li>
-        </ul>
-      </div>
-    </article>
-
-    <article class="day">
-      <div class="datebox"><div class="dow" contenteditable="true">Sunday</div><div class="date" contenteditable="true">04</div><div class="month" contenteditable="true">October 2026</div></div>
-      <div><h3 contenteditable="true">Day 2 · bakery + Apgujeong</h3>
-        <div class="flow"><span class="stop" contenteditable="true">Flourisen bakery</span><span class="stop" contenteditable="true">Apgujeong shopping</span><span class="stop rose" contenteditable="true">Dinner</span></div>
-        <ul>
-          <li contenteditable="true">Start with Flourisen bakery.</li>
-          <li contenteditable="true">Spend the day shopping and wandering in Apgujeong.</li>
-        </ul>
-        <div class="note" contenteditable="true">Easy meet-up day for Gloria since Apgujeong is closer to Josun.</div>
-      </div>
-    </article>
-
-    <article class="day">
-      <div class="datebox"><div class="dow" contenteditable="true">Monday</div><div class="date" contenteditable="true">05</div><div class="month" contenteditable="true">October 2026</div></div>
-      <div><h3 contenteditable="true">Clinic day</h3>
-        <div class="flow"><span class="stop rose" contenteditable="true">Morning clinic</span><span class="stop" contenteditable="true">Apgujeong lunch</span><span class="stop" contenteditable="true">Optional dinner</span></div>
-        <ul>
-          <li contenteditable="true">Morning: clinic — confirm who’s joining.</li>
-          <li contenteditable="true">Lunch in Apgujeong.</li>
-          <li contenteditable="true">Optional dinner: Apgujeong Sanghoe (opens 17:00).</li>
-        </ul>
-      </div>
-    </article>
-
-    <article class="day">
-      <div class="datebox"><div class="dow" contenteditable="true">Tuesday</div><div class="date" contenteditable="true">06</div><div class="month" contenteditable="true">October 2026</div></div>
-      <div><h3 contenteditable="true">Departure</h3>
-        <div class="flow"><span class="stop" contenteditable="true">Breakfast</span><span class="stop" contenteditable="true">Checkout</span><span class="stop rose" contenteditable="true">GMP / Seoul airport</span></div>
-        <ul>
-          <li contenteditable="true">Breakfast and pack up.</li>
-          <li contenteditable="true">Checkout by 11:00 AM.</li>
-          <li contenteditable="true">Gloria: MU512 departs GMP at 12:00 → SHA 12:55, so she needs the earlier airport departure.</li>
-          <li contenteditable="true">Susan: Seoul → Shanghai departs 16:20 and arrives 17:30. Return airport / flight number still to confirm from the expanded booking details.</li>
-        </ul>
-      </div>
-    </article>
-  </section>
-
-  <div class="footer" contenteditable="true">Seoul · Oct 2–6, 2026 · made for the group chat ✨</div>
+  <div class="footer" contenteditable="true" data-key="footer">Seoul · Oct 2–6, 2026 · made for the group chat ✨</div>
 </div>
-<div class="code-modal" id="codeModal" role="dialog" aria-modal="true" aria-labelledby="codeTitle">
-  <form class="code-card" id="codeForm">
+
+<div class="modal" id="codeModal" role="dialog" aria-modal="true" aria-labelledby="codeTitle">
+  <form class="sheet" id="codeForm" style="max-width:360px">
     <h2 id="codeTitle">Group code</h2>
     <div class="small">Enter the 4-digit code from the group chat to edit. You only need to do this once on this device.</div>
-    <input id="codeInput" inputmode="numeric" autocomplete="off" maxlength="4" pattern="[0-9]*" aria-label="Group code">
+    <div class="fld"><input id="codeInput" class="code-input" inputmode="numeric" autocomplete="off" maxlength="4" pattern="[0-9]*" aria-label="Group code"></div>
     <div class="err" id="codeErr"></div>
-    <div class="row"><button type="submit">Unlock editing</button><button type="button" class="secondary" id="codeCancel">Just viewing</button></div>
+    <div class="btns"><button type="submit">Unlock editing</button><button type="button" class="secondary" id="codeCancel">Just viewing</button></div>
   </form>
 </div>
+
+<div class="modal" id="formModal" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+  <form class="sheet" id="itemForm" novalidate>
+    <h2 id="formTitle"></h2>
+    <div id="formFields"></div>
+    <div class="err" id="formErr"></div>
+    <div class="btns">
+      <button type="submit" id="formSave">Save</button>
+      <button type="button" class="secondary" id="formCancel">Cancel</button>
+      <span class="spacer"></span>
+      <button type="button" class="danger" id="formDelete">Delete</button>
+    </div>
+  </form>
+</div>
+
 <script>
 function downloadHTML(){
   const clone=document.documentElement.cloneNode(true);
-  // Remove temporary focus state only; keep all editable content and controls.
   clone.querySelectorAll('[contenteditable=true]').forEach(el=>el.removeAttribute('spellcheck'));
+  clone.querySelectorAll('.modal').forEach(el=>el.classList.remove('open'));
   const html='<!DOCTYPE html>\n'+clone.outerHTML;
   const blob=new Blob([html],{type:'text/html;charset=utf-8'});
   const url=URL.createObjectURL(blob);
@@ -273,33 +332,111 @@ function downloadHTML(){
 }
 function copyShare(){
   const clone=document.body.cloneNode(true);
-  clone.querySelectorAll('button,.edit-hint,.code-modal').forEach(el=>el.remove());
+  clone.querySelectorAll('button,.edit-hint,.modal,.no-copy,.map-link,.now-line,script').forEach(el=>el.remove());
   navigator.clipboard.writeText(clone.innerText.trim()).then(()=>{
     const btn=[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Copy'));
     if(btn){const old=btn.textContent;btn.textContent='Copied ✓';setTimeout(()=>btn.textContent=old,1400)}
   });
 }
-// ---- Live sync: shared edits for everyone with the link ----
+
+// ================= Config =================
 // Storage: Supabase project desfa-demo, isolated schema `seoul_trip`, reached only via public.seoul_trip_* functions.
 // To move the data: see pack_up.sql, then change SYNC_URL / SYNC_KEY below.
 const SYNC_URL='https://vlrbqezmwdobwzushyxu.supabase.co';
 const SYNC_KEY='sb_publishable_WO2PsCES7CSXSYJ7pPLsyg_Qs7z-n9H';
 const CODE_KEY='seoul-trip-group-code';
 const POLL_MS=5000;
-const fields=[...document.querySelectorAll('[contenteditable="true"]')];
-fields.forEach((el,i)=>{el.dataset.syncKey='f'+i;});
-const byKey=Object.fromEntries(fields.map(el=>[el.dataset.syncKey,el]));
-const pending={};   // key -> text waiting to be saved
-const timers={};
-let saving=0, offline=false, lastFocus=null;
+const TRIP_TZ='Asia/Seoul';
 
+const DAYS=[
+  {n:1,iso:'2026-10-02',dow:'Friday',  date:'02',title:'Susan arrives · soft landing',note:'Gloria and Loubna arrive the following day.'},
+  {n:2,iso:'2026-10-03',dow:'Saturday',date:'03',title:'Day 1 · full group',note:'Meet when everyone is ready; Hyeyeon guides the day.'},
+  {n:3,iso:'2026-10-04',dow:'Sunday',  date:'04',title:'Day 2 · bakery + Apgujeong',note:'Easy meet-up day for Gloria since Apgujeong is closer to Josun.'},
+  {n:4,iso:'2026-10-05',dow:'Monday',  date:'05',title:'Clinic day',note:''},
+  {n:5,iso:'2026-10-06',dow:'Tuesday', date:'06',title:'Departure',note:''},
+];
+
+const I={ // line icons (24px grid)
+  lodging:'<path d="M3 19v-9M3 15h18v4M21 15v-2.5A2.5 2.5 0 0 0 18.5 10H11v5"/><circle cx="7" cy="12" r="1.8"/>',
+  cafe:'<path d="M4 9h12v4.5A5.5 5.5 0 0 1 10.5 19h-1A5.5 5.5 0 0 1 4 13.5V9z"/><path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c0 1 1 1.5 1 2.5M12 3.5c0 1 1 1.5 1 2.5"/>',
+  lunch:'<path d="M7 3v18M4.5 3v5a2.5 2.5 0 0 0 5 0V3"/><path d="M17.5 21V3c-2 1.4-3.2 4-3.2 7.2V14h3.2"/>',
+  dinner:'<path d="M8 3h8l-.4 5.5a3.6 3.6 0 0 1-7.2 0L8 3z"/><path d="M12 12.2V20M8.5 20.5h7"/>',
+  shopping:'<path d="M5 8h14l-1.1 12.2H6.1L5 8z"/><path d="M9 8V6.8a3 3 0 0 1 6 0V8"/>',
+  activity:'<path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4V7z"/><path d="M14.5 7.5v1.5M14.5 11.2v1.6M14.5 15v1.5"/>',
+  beauty:'<path d="M11 3.5l1.7 4.8 4.8 1.7-4.8 1.7L11 16.5l-1.7-4.8L4.5 10l4.8-1.7L11 3.5z"/><path d="M18 15l.7 1.8 1.8.7-1.8.7L18 20l-.7-1.8-1.8-.7 1.8-.7L18 15z"/>',
+  transport:'<path d="M4 13l1.8-5.2A1.5 1.5 0 0 1 7.2 6.8h9.6a1.5 1.5 0 0 1 1.4 1l1.8 5.2v4H4v-4z"/><path d="M4 13h16"/><circle cx="7.8" cy="17.2" r="1.4"/><circle cx="16.2" cy="17.2" r="1.4"/>',
+  flight:'<path d="M20.5 15.5v-1.8L13 9V4.3a1.3 1.3 0 0 0-2.6 0V9l-7.4 4.7v1.8l7.4-2.3v4.6L8.6 19.2v1.3l3.1-.9 3.1.9v-1.3L13 17.8v-4.6l7.5 2.3z"/>',
+  kids:'<path d="M12 3a5 5 0 0 0-5 5c0 3.6 3 6.5 5 7 2-.5 5-3.4 5-7a5 5 0 0 0-5-5z"/><path d="M11 15.2h2l-1 1.8-1-1.8zM12 17c-.3 1.6-2 2-1.6 4"/>',
+  free:'<circle cx="12" cy="12" r="3.8"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>',
+  pin:'<path d="M12 21s-6.2-5.6-6.2-11A6.2 6.2 0 0 1 18.2 10c0 5.4-6.2 11-6.2 11z"/><circle cx="12" cy="10" r="2.2"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>',
+  up:'<path d="M12 19V5M6.5 10.5L12 5l5.5 5.5"/>',
+  down:'<path d="M12 5v14M6.5 13.5L12 19l5.5-5.5"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  morning:'<path d="M4 17h16M7 17a5 5 0 0 1 10 0M12 7V5M6.3 9.3L5 8M17.7 9.3L19 8"/>',
+  afternoon:'<circle cx="12" cy="12" r="4"/><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2"/>',
+  evening:'<path d="M4 17h16M7 17a5 5 0 0 1 10 0"/><path d="M12 9.5V5.5M9.8 7.7L12 9.9l2.2-2.2"/>',
+  night:'<path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z"/>'
+};
+const CATS={
+  lodging:  {label:'Lodging',          col:'#8fa9c0', soft:'#e4eaf0', ink:'#4c5f71'},
+  cafe:     {label:'Café & breakfast', col:'#b8a07e', soft:'#f0e9de', ink:'#6f5b40'},
+  lunch:    {label:'Lunch',            col:'#93a58b', soft:'#e3eadf', ink:'#51634b'},
+  dinner:   {label:'Dinner',           col:'#ae8888', soft:'#efe1e0', ink:'#6e4f4f'},
+  shopping: {label:'Shopping',         col:'#a197b6', soft:'#e8e4ef', ink:'#5d5473'},
+  activity: {label:'Activity',         col:'#82a5a1', soft:'#dfeae8', ink:'#4a6663'},
+  beauty:   {label:'Beauty',           col:'#c6a3ab', soft:'#f3e6e8', ink:'#7a5860'},
+  transport:{label:'Transport',        col:'#94979c', soft:'#e7e8e9', ink:'#55595e'},
+  flight:   {label:'Flight',           col:'#848ea0', soft:'#e2e5eb', ink:'#4d566a'},
+  kids:     {label:'Kids',             col:'#c4ab72', soft:'#f2ebd8', ink:'#72602f'},
+  free:     {label:'Free time',        col:'#afa99f', soft:'#eeebe5', ink:'#67635b'},
+};
+const PARTS={morning:{label:'Morning',min:540},afternoon:{label:'Afternoon',min:780},evening:{label:'Evening',min:1080},night:{label:'Night',min:1260}};
+document.documentElement.style.setProperty('--c-flight',CATS.flight.col);
+document.documentElement.style.setProperty('--s-flight',CATS.flight.soft);
+document.documentElement.style.setProperty('--i-flight',CATS.flight.ink);
+
+// ================= Small DOM helpers (all user data goes in via textContent) =================
+function h(tag,attrs,...kids){
+  const el=document.createElement(tag);
+  for(const [k,v] of Object.entries(attrs||{})){
+    if(v==null||v===false) continue;
+    if(k==='class') el.className=v; else if(k==='style') el.setAttribute('style',v);
+    else if(k.startsWith('on')) el.addEventListener(k.slice(2),v); else el.setAttribute(k,v===true?'':v);
+  }
+  for(const kid of kids.flat()){ if(kid==null||kid===false) continue; el.append(kid instanceof Node?kid:document.createTextNode(String(kid))); }
+  return el;
+}
+function icon(name,cls){const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 24 24');s.setAttribute('class','icon'+(cls?' '+cls:''));s.setAttribute('aria-hidden','true');s.innerHTML=I[name]||'';return s;}
+function catVars(cat){const c=CATS[cat]||CATS.free;return `--col:${c.col};--soft:${c.soft};--ink-c:${c.ink}`;}
+function mapLinks(q){
+  if(!q||!q.trim()) return null;
+  const e=encodeURIComponent(q.trim());
+  return h('div',{class:'map-row'},
+    h('span',{class:'addr'},icon('pin','sm'),q.trim()),
+    h('a',{class:'map-link',href:'https://map.naver.com/p/search/'+e,target:'_blank',rel:'noopener'},h('span',{class:'dotn'}),'Naver Map'),
+    h('a',{class:'map-link',href:'https://www.google.com/maps/search/?api=1&query='+e,target:'_blank',rel:'noopener'},h('span',{class:'dotg'}),'Google Maps'));
+}
+function toMin(t){const m=/^(\d{1,2}):(\d{2})$/.exec(t||'');return m?(+m[1])*60+(+m[2]):null;}
+function anchorOf(d){const t=toMin(d.time);if(t!=null)return t;return d.part&&PARTS[d.part]?PARTS[d.part].min:null;}
+function durationText(a,b){const s=toMin(a),e=toMin(b);if(s==null||e==null||e<=s)return '';const d=e-s,hh=Math.floor(d/60),mm=d%60;return (hh?hh+'h':'')+(hh&&mm?' ':'')+(mm?mm+'m':'');}
+function seoulNow(){
+  const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:TRIP_TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));
+  return {iso:`${p.year}-${p.month}-${p.day}`,min:(+p.hour)*60+(+p.minute),hhmm:`${p.hour}:${p.minute}`};
+}
+
+// ================= State =================
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}
 let groupCode=lsGet(CODE_KEY);
+let items=[];            // [{id,list,day,sort,data}]
+let itemsSig='';
+const pending={}, timers={};
+let saving=0, offline=false, lastFocus=null, pendingAction=null;
 
 async function rpc(fn,body){
   const r=await fetch(SYNC_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':SYNC_KEY,'Content-Type':'application/json'},body:JSON.stringify(body||{})});
-  if(!r.ok) throw new Error('HTTP '+r.status);
+  if(!r.ok){let msg='HTTP '+r.status;try{const j=await r.json();msg=j.message||msg}catch(e){} const err=new Error(msg);err.http=r.status;throw err;}
   return r.json();
 }
 function setStatus(text,warn){const s=document.getElementById('syncStatus');if(!s)return;s.textContent=text;s.classList.toggle('warn',!!warn);}
@@ -309,83 +446,351 @@ function refreshStatus(){
   setStatus(groupCode?'Synced ✓':'Synced · view only');
 }
 function textOf(el){return el.innerText.replace(/\n+$/,'');}
+function listOf(list,day){return items.filter(i=>i.list===list&&(list!=='stops'||i.day===day)).sort((a,b)=>a.sort-b.sort);}
 
+// ================= Rendering =================
+function buildDays(){
+  const root=document.getElementById('days'); root.innerHTML='';
+  for(const d of DAYS){
+    root.append(h('article',{class:'day',id:'day'+d.n,'data-iso':d.iso},
+      h('div',{class:'datebox'},
+        h('div',{class:'dow',contenteditable:'true','data-key':`d${d.n}_dow`},d.dow),
+        h('div',{class:'date',contenteditable:'true','data-key':`d${d.n}_date`},d.date),
+        h('div',{class:'month',contenteditable:'true','data-key':`d${d.n}_month`},'October 2026'),
+        h('span',{class:'today-badge no-copy'},'Today')),
+      h('div',{},
+        h('h3',{contenteditable:'true','data-key':`d${d.n}_title`},d.title),
+        h('div',{class:'day-sum no-copy',id:'sum'+d.n}),
+        h('div',{class:'tl',id:'tl'+d.n}),
+        h('button',{class:'add-btn no-copy','data-add':'stops','data-day':d.n}),
+        h('div',{class:'note day-note',contenteditable:'true','data-key':`d${d.n}_note`,'data-placeholder':'Add a note for the day…'},d.note))));
+  }
+  document.querySelectorAll('.add-btn').forEach(b=>{
+    const kind=b.dataset.add;
+    b.replaceChildren(icon('plus','sm'), kind==='stops'?'Add stop':kind==='people'?'Add family':'Add flight');
+    b.onclick=()=>requireCode(()=>openItemForm(kind,null,b.dataset.day?+b.dataset.day:null));
+  });
+  const lg=document.getElementById('legend');
+  lg.replaceChildren(...Object.entries(CATS).map(([k,c])=>h('span',{class:'chip',style:catVars(k)},icon(k),c.label)));
+}
+
+function renderPeople(){
+  const root=document.getElementById('peopleList');
+  const rows=listOf('people');
+  root.replaceChildren(...rows.map(it=>{const d=it.data;
+    return h('div',{class:'party'},h('span',{class:'dot'}),
+      h('div',{class:'p-body'},
+        h('strong',{},d.name||'Untitled'),
+        d.stay?h('div',{class:'p-stay'},icon('lodging','sm'),d.stay):null,
+        d.details?h('div',{class:'small'},d.details):null,
+        mapLinks(d.address)),
+      h('div',{class:'p-actions no-copy'},h('button',{class:'icon-btn',title:'Edit',
+        'aria-label':'Edit '+(d.name||'family'),onclick:()=>requireCode(()=>openItemForm('people',it))},icon('edit'))));
+  }));
+  if(!rows.length) root.append(h('div',{class:'small'},'No families yet.'));
+}
+
+function renderFlights(){
+  const root=document.getElementById('flightList');
+  const rows=listOf('flights');
+  root.replaceChildren(...rows.map(it=>{const d=it.data;
+    return h('div',{class:'flight'},
+      h('div',{class:'f-top'},icon('flight','sm'),d.who?h('span',{class:'who'},d.who):null,d.date||''),
+      h('div',{class:'route'},d.route||'—'),
+      d.flight?h('div',{class:'small'},d.flight):null,
+      d.notes?h('div',{class:'note',style:'margin-top:8px;font-size:12.5px'},d.notes):null,
+      h('div',{class:'f-actions no-copy'},h('button',{class:'icon-btn',title:'Edit','aria-label':'Edit flight',onclick:()=>requireCode(()=>openItemForm('flights',it))},icon('edit'))));
+  }));
+  if(!rows.length) root.append(h('div',{class:'small'},'No flights yet.'));
+}
+
+function renderDays(){
+  const now=seoulNow();
+  for(const day of DAYS){
+    const rows=listOf('stops',day.n);
+    const tl=document.getElementById('tl'+day.n), sum=document.getElementById('sum'+day.n);
+    const isToday=now.iso===day.iso;
+    document.getElementById('day'+day.n).classList.toggle('today',isToday);
+    const nodes=[]; let nowPlaced=!isToday;
+    rows.forEach((it,idx)=>{
+      const d=it.data, c=CATS[d.category]||CATS.free, a=anchorOf(d);
+      if(!nowPlaced&&a!=null&&a>now.min){nodes.push(nowLine(now));nowPlaced=true;}
+      const timeCol=h('div',{class:'tl-time'});
+      if(toMin(d.time)!=null){
+        timeCol.append(h('div',{class:'t'},d.time));
+        if(toMin(d.end)!=null) timeCol.append(h('div',{class:'e'},'→ '+d.end));
+        const du=durationText(d.time,d.end); if(du) timeCol.append(h('div',{},h('span',{class:'dur'},du)));
+      } else if(d.part&&PARTS[d.part]){
+        timeCol.append(h('span',{class:'part'},icon(d.part),PARTS[d.part].label));
+      } else timeCol.append(h('span',{class:'any'},'Anytime'));
+      nodes.push(h('div',{class:'tl-item',style:catVars(d.category)},
+        timeCol,
+        h('div',{class:'tl-node',title:c.label},icon(CATS[d.category]?d.category:'free')),
+        h('div',{class:'tl-card'},
+          h('div',{class:'tl-head'},
+            h('span',{class:'cat'},c.label),
+            inlineTime(d),
+            h('div',{class:'tl-actions no-copy'},
+              idx>0?h('button',{class:'icon-btn',title:'Move up','aria-label':'Move up',onclick:()=>requireCode(()=>moveStop(it,-1))},icon('up')):null,
+              idx<rows.length-1?h('button',{class:'icon-btn',title:'Move down','aria-label':'Move down',onclick:()=>requireCode(()=>moveStop(it,1))},icon('down')):null,
+              h('button',{class:'icon-btn',title:'Edit','aria-label':'Edit stop',onclick:()=>requireCode(()=>openItemForm('stops',it))},icon('edit')))),
+          h('div',{class:'ttl'},d.title||'Untitled stop'),
+          d.notes?h('div',{class:'nts'},d.notes):null,
+          mapLinks(d.address))));
+    });
+    if(!nowPlaced&&rows.length) nodes.push(nowLine(now));
+    if(!rows.length) nodes.push(h('div',{class:'empty-day'},'Nothing planned yet.'));
+    tl.replaceChildren(...nodes);
+    // summary: count · time span · category dots
+    const timed=rows.map(r=>r.data).filter(d=>toMin(d.time)!=null);
+    const span=timed.length?(timed.length>1?`${timed[0].time} – ${(timed[timed.length-1].end&&toMin(timed[timed.length-1].end)!=null)?timed[timed.length-1].end:timed[timed.length-1].time}`:timed[0].time):'';
+    const cats=[...new Set(rows.map(r=>r.data.category))];
+    sum.replaceChildren(
+      h('span',{},rows.length+(rows.length===1?' stop':' stops')),
+      span?h('span',{},'· '+span):null,
+      cats.length?h('span',{class:'dots'},cats.map(k=>h('i',{style:`background:${(CATS[k]||CATS.free).col}`,title:(CATS[k]||CATS.free).label}))):null);
+  }
+}
+function inlineTime(d){
+  if(toMin(d.time)!=null){const du=durationText(d.time,d.end);
+    return h('span',{class:'tin'},'· '+d.time+(toMin(d.end)!=null?'–'+d.end:''),du?h('span',{class:'tsub'},' ('+du+')'):null);}
+  if(d.part&&PARTS[d.part]) return h('span',{class:'tin'},h('span',{class:'tsub'},'· '+PARTS[d.part].label));
+  return null;
+}
+function nowLine(now){return h('div',{class:'now-line no-copy'},h('div',{class:'lbl'},'Now '+now.hhmm),h('div',{class:'bar'}));}
+function renderAll(){renderPeople();renderFlights();renderDays();}
+
+// ================= Sync: text blocks =================
 async function pull(){
   try{
-    const rows=await rpc('seoul_trip_get');
+    const [rows,its]=await Promise.all([rpc('seoul_trip_get'),rpc('seoul_trip_items')]);
     offline=false;
     rows.forEach(r=>{
-      const el=byKey[r.key];
+      const el=document.querySelector(`[data-key="${CSS.escape(r.key)}"]`);
       if(!el||el===document.activeElement||r.key in pending) return;
       if(textOf(el)!==r.body) el.textContent=r.body;
     });
+    const sig=JSON.stringify(its);
+    if(sig!==itemsSig){itemsSig=sig;items=its;renderAll();}
   }catch(e){offline=true;}
   await flush();
   refreshStatus();
 }
-
 async function flush(){
   for(const key of Object.keys(pending)){
+    if(!groupCode) break;
     const text=pending[key];
     saving++; refreshStatus();
     try{
       const ts=await rpc('seoul_trip_save',{p_code:groupCode,p_key:key,p_body:text});
       offline=false;
-      if(ts===null){ // wrong code (or too many wrong tries)
-        groupCode=null; lsSet(CODE_KEY,null);
-        openCode('That code didn’t work. Check the group chat and try again.');
-        saving--; return;
-      }
+      if(ts===null){codeRejected(); saving--; return;}
       if(pending[key]===text) delete pending[key];
     }catch(e){offline=true; saving--; refreshStatus(); return;}
     saving--;
   }
   refreshStatus();
 }
-
 function queueSave(el){
-  const key=el.dataset.syncKey;
+  const key=el.dataset.key;
   pending[key]=textOf(el);
   refreshStatus();
   clearTimeout(timers[key]);
   timers[key]=setTimeout(()=>{ if(groupCode) flush(); },700);
 }
+document.addEventListener('focusin',e=>{
+  const el=e.target.closest&&e.target.closest('[data-key][contenteditable="true"]');
+  if(el&&!groupCode){lastFocus=el; el.blur(); openCode();}
+});
+document.addEventListener('input',e=>{
+  const el=e.target.closest&&e.target.closest('[data-key][contenteditable="true"]');
+  if(el) queueSave(el);
+});
+document.addEventListener('focusout',e=>{
+  const el=e.target.closest&&e.target.closest('[data-key][contenteditable="true"]');
+  if(el&&el.dataset.key in pending&&groupCode){clearTimeout(timers[el.dataset.key]);flush();}
+});
 
-// ---- group code gate ----
-const modal=document.getElementById('codeModal');
+// ================= Group code gate =================
+const codeModal=document.getElementById('codeModal');
 function openCode(msg){
   document.getElementById('codeErr').textContent=msg||'';
   document.getElementById('codeInput').value='';
-  modal.classList.add('open');
+  codeModal.classList.add('open');
   setTimeout(()=>document.getElementById('codeInput').focus(),30);
 }
-function closeCode(){modal.classList.remove('open');}
-document.getElementById('codeCancel').addEventListener('click',()=>{closeCode();lastFocus=null;});
+function closeCode(){codeModal.classList.remove('open');}
+function requireCode(fn){ if(groupCode) fn(); else {pendingAction=fn; openCode();} }
+function codeRejected(){
+  groupCode=null; lsSet(CODE_KEY,null); closeForm();
+  openCode('That code didn’t work. Check the group chat and try again.');
+}
+document.getElementById('codeCancel').addEventListener('click',()=>{closeCode();lastFocus=null;pendingAction=null;refreshStatus();});
 document.getElementById('codeForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const code=document.getElementById('codeInput').value.trim();
-  if(!/^[0-9]{4}$/.test(code)){document.getElementById('codeErr').textContent='Please enter 4 digits.';return;}
-  document.getElementById('codeErr').textContent='Checking…';
+  const code=document.getElementById('codeInput').value.trim(), err=document.getElementById('codeErr');
+  if(!/^[0-9]{4}$/.test(code)){err.textContent='Please enter 4 digits.';return;}
+  err.textContent='Checking…';
   try{
     const ok=await rpc('seoul_trip_check_code',{p_code:code});
-    if(!ok){document.getElementById('codeErr').textContent='That code didn’t work. Check the group chat.';return;}
+    if(!ok){err.textContent='That code didn’t work. Check the group chat.';return;}
     groupCode=code; lsSet(CODE_KEY,code); closeCode(); refreshStatus();
     await flush();
     if(lastFocus){const el=lastFocus;lastFocus=null;el.focus();}
-  }catch(err){document.getElementById('codeErr').textContent='Can’t reach the server right now. Try again in a moment.';}
+    if(pendingAction){const fn=pendingAction;pendingAction=null;fn();}
+  }catch(x){err.textContent='Can’t reach the server right now. Try again in a moment.';}
 });
 
-fields.forEach(el=>{
-  el.addEventListener('focus',()=>{ if(!groupCode){lastFocus=el; el.blur(); openCode();} });
-  el.addEventListener('input',()=>queueSave(el));
-  el.addEventListener('blur',()=>{ const k=el.dataset.syncKey; if(k in pending&&groupCode){clearTimeout(timers[k]);flush();} });
-});
+// ================= Add / edit / delete / move =================
+const SCHEMAS={
+  stops:{noun:'stop',fields:[
+    {name:'category',label:'Category',type:'category'},
+    {name:'title',label:'What',type:'text',placeholder:'e.g. Dinner at Mingles',required:true},
+    {row:'row3',fields:[
+      {name:'time',label:'Start',type:'time'},
+      {name:'end',label:'End (optional)',type:'time'},
+      {name:'part',label:'No exact time?',type:'select',options:[['','—'],['morning','Morning'],['afternoon','Afternoon'],['evening','Evening'],['night','Night']]}]},
+    {name:'day',label:'Day',type:'day'},
+    {name:'address',label:'Address or place name',type:'text',placeholder:'e.g. Grand Hyatt Seoul',hint:'Shows Naver Map and Google Maps buttons. Korean addresses work best in Naver.'},
+    {name:'notes',label:'Notes',type:'textarea',placeholder:'Reservation name, who’s joining, what to bring…'}]},
+  people:{noun:'family',fields:[
+    {name:'name',label:'Family',type:'text',placeholder:'e.g. Loubna’s family',required:true},
+    {name:'stay',label:'Staying at',type:'text',placeholder:'e.g. Grand Hyatt Seoul'},
+    {name:'address',label:'Address or place name (for maps)',type:'text',placeholder:'e.g. Grand Hyatt Seoul'},
+    {name:'details',label:'Details',type:'textarea',placeholder:'Arrival, flight, anything useful'}]},
+  flights:{noun:'flight',fields:[
+    {row:'row2',fields:[
+      {name:'who',label:'Who',type:'text',placeholder:'e.g. Susan',required:true},
+      {name:'date',label:'Date',type:'text',placeholder:'e.g. Fri Oct 2'}]},
+    {name:'route',label:'Route & times',type:'text',placeholder:'e.g. PVG T1 09:10 → ICN T1 11:55',required:true},
+    {name:'flight',label:'Airline & flight number',type:'text',placeholder:'e.g. China Eastern MU5041'},
+    {name:'notes',label:'Notes',type:'textarea',placeholder:'Terminal, booking reference kept elsewhere, etc.'}]},
+};
+const formModal=document.getElementById('formModal');
+let formCtx=null;
 
+function openItemForm(list,item,day){
+  const sc=SCHEMAS[list], d=item?item.data:{}, box=document.getElementById('formFields');
+  formCtx={list,item,day:item?item.day:(day||1)};
+  document.getElementById('formTitle').textContent=(item?'Edit ':'Add ')+sc.noun;
+  document.getElementById('formErr').textContent='';
+  const del=document.getElementById('formDelete'); del.style.display=item?'':'none'; del.classList.remove('armed'); del.textContent='Delete';
+  const build=f=>{
+    if(f.row) return h('div',{class:f.row},f.fields.map(build));
+    const id='f_'+f.name; let input;
+    if(f.type==='category'){
+      const cur=d.category||'activity';
+      input=h('div',{class:'cat-picker',id,role:'group','aria-label':'Category'},Object.entries(CATS).map(([k,c])=>
+        h('button',{type:'button',class:'cat-opt',style:catVars(k),'data-val':k,'aria-pressed':String(k===cur),
+          onclick:ev=>{ev.currentTarget.parentNode.querySelectorAll('.cat-opt').forEach(b=>b.setAttribute('aria-pressed',String(b===ev.currentTarget)));}},icon(k),c.label)));
+      return h('div',{class:'fld'},h('label',{},f.label),input);
+    }
+    if(f.type==='textarea') input=h('textarea',{id,placeholder:f.placeholder||''});
+    else if(f.type==='select'||f.type==='day'){
+      const opts=f.type==='day'?DAYS.map(x=>[String(x.n),`${x.dow.slice(0,3)} Oct ${+x.date} · ${x.title}`]):f.options;
+      input=h('select',{id},opts.map(([v,l])=>h('option',{value:v},l)));
+    } else input=h('input',{id,type:f.type==='time'?'time':'text',placeholder:f.placeholder||'',autocomplete:'off'});
+    const val=f.type==='day'?String(formCtx.day):(d[f.name]||'');
+    input.value=val;
+    return h('div',{class:'fld'},h('label',{for:id},f.label),input,f.hint?h('div',{class:'hint'},f.hint):null);
+  };
+  box.replaceChildren(...sc.fields.map(build));
+  formModal.classList.add('open');
+  const first=box.querySelector('input[type=text],textarea'); if(first&&!('ontouchstart' in window)) setTimeout(()=>first.focus(),30);
+}
+function closeForm(){formModal.classList.remove('open');formCtx=null;}
+function readForm(){
+  const out={}, sc=SCHEMAS[formCtx.list];
+  const walk=f=>{ if(f.row) return f.fields.forEach(walk);
+    const el=document.getElementById('f_'+f.name);
+    if(f.type==='category') out.category=(el.querySelector('[aria-pressed="true"]')||{}).dataset?.val||'activity';
+    else if(f.type==='day') out.__day=+el.value;
+    else out[f.name]=el.value.trim();
+  };
+  sc.fields.forEach(walk);
+  return out;
+}
+function sortForNew(list,day,exceptId,anchor){
+  const rows=listOf(list,day).filter(r=>r.id!==exceptId);
+  if(!rows.length) return 1000;
+  if(anchor!=null){
+    const idx=rows.findIndex(r=>{const a=anchorOf(r.data);return a!=null&&a>anchor;});
+    if(idx===0) return rows[0].sort-1000;
+    if(idx>0) return (rows[idx-1].sort+rows[idx].sort)/2;
+  }
+  return rows[rows.length-1].sort+1000;
+}
+async function saveItem(list,id,day,sort,data){
+  saving++; refreshStatus();
+  try{
+    const r=await rpc('seoul_trip_upsert_item',{p_code:groupCode,p_id:id,p_list:list,p_day:list==='stops'?day:null,p_sort:sort,p_data:data});
+    if(r===null){codeRejected();return false;}
+    return true;
+  } finally { saving--; refreshStatus(); }
+}
+document.getElementById('itemForm').addEventListener('submit',async e=>{
+  e.preventDefault(); if(!formCtx) return;
+  const {list,item}=formCtx, v=readForm(), err=document.getElementById('formErr');
+  const sc=SCHEMAS[list]; const missing=[];
+  const walk=f=>{if(f.row) return f.fields.forEach(walk); if(f.required&&!v[f.name]) missing.push(f.label);};
+  sc.fields.forEach(walk);
+  if(missing.length){err.textContent='Please fill in: '+missing.join(', ');return;}
+  let day=null, sort, data;
+  if(list==='stops'){
+    day=v.__day; delete v.__day;
+    if(v.end&&!v.time){err.textContent='Add a start time, or clear the end time.';return;}
+    if(v.time) v.part='';
+    data={category:v.category,time:v.time,end:v.end,part:v.part,title:v.title,address:v.address,notes:v.notes};
+    const a=anchorOf(data);
+    const moved=!item||item.day!==day;
+    const timeChanged=item&&(anchorOf(item.data)!==a);
+    sort=(moved||timeChanged)?sortForNew('stops',day,item&&item.id,a):item.sort;
+  } else {
+    data=v; sort=item?item.sort:sortForNew(list,null,null,null);
+  }
+  const btn=document.getElementById('formSave'); btn.disabled=true; err.textContent='Saving…';
+  try{
+    const ok=await saveItem(list,item?item.id:null,day,sort,data);
+    if(ok){closeForm(); itemsSig=''; await pull();}
+  }catch(x){err.textContent=x.message==='too_many_items'?'The list is full (400 entries).':'Couldn’t save — check your connection and try again.';}
+  finally{btn.disabled=false;}
+});
+document.getElementById('formCancel').addEventListener('click',closeForm);
+document.getElementById('formDelete').addEventListener('click',async e=>{
+  const b=e.currentTarget; if(!formCtx||!formCtx.item) return;
+  if(!b.classList.contains('armed')){b.classList.add('armed');b.textContent='Tap again to delete';return;}
+  const err=document.getElementById('formErr'); err.textContent='Deleting…';
+  saving++; refreshStatus();
+  try{
+    const r=await rpc('seoul_trip_delete_item',{p_code:groupCode,p_id:formCtx.item.id});
+    if(r===null){codeRejected();return;}
+    closeForm(); itemsSig=''; await pull();
+  }catch(x){err.textContent='Couldn’t delete — check your connection and try again.';}
+  finally{saving--; refreshStatus();}
+});
+formModal.addEventListener('click',e=>{if(e.target===formModal) closeForm();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeForm();closeCode();}});
+
+async function moveStop(it,dir){
+  const rows=listOf('stops',it.day), i=rows.findIndex(r=>r.id===it.id), j=i+dir;
+  if(i<0||j<0||j>=rows.length) return;
+  const other=rows[j]; let a=it.sort, b=other.sort;
+  if(a===b){b=a+(dir>0?1:-1);}
+  // optimistic swap
+  it.sort=b; other.sort=a; renderDays();
+  try{
+    const ok1=await saveItem('stops',it.id,it.day,b,it.data); if(!ok1) return;
+    await saveItem('stops',other.id,other.day,a,other.data);
+  }catch(x){offline=true;refreshStatus();}
+  itemsSig=''; await pull();
+}
+
+// ================= Boot =================
+buildDays();
 pull();
 setInterval(()=>{ if(document.visibilityState==='visible') pull(); },POLL_MS);
+setInterval(()=>{ if(!formCtx) renderDays(); },60000);
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') pull(); });
 window.addEventListener('online',pull);
 </script>
-
-
 </body></html>
