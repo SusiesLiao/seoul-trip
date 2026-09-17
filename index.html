@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seoul · Oct 2–6, 2026</title>
+<style>
+  :root {
+    --paper:#f6f1e8;
+    --ink:#20211f;
+    --muted:#77746e;
+    --sage:#667265;
+    --sage-soft:#dce3dc;
+    --rose:#b88f8b;
+    --rose-soft:#eadbd8;
+    --cream:#fffdf8;
+    --line:#d9d2c6;
+    --shadow:0 18px 50px rgba(53,48,42,.10);
+    --radius:24px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 12% 8%, rgba(184,143,139,.12), transparent 25%),
+      radial-gradient(circle at 90% 18%, rgba(102,114,101,.10), transparent 26%),
+      var(--paper);
+    color:var(--ink);
+    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height:1.55;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 70px}
+  .hero{
+    background:linear-gradient(145deg, rgba(255,253,248,.96), rgba(246,241,232,.94));
+    border:1px solid rgba(120,112,100,.16);
+    border-radius:32px;
+    padding:44px;
+    box-shadow:var(--shadow);
+    position:relative;
+    overflow:hidden;
+  }
+  .hero:after{
+    content:"SEOUL";
+    position:absolute;
+    right:-8px;
+    bottom:-28px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size:116px;
+    letter-spacing:.08em;
+    color:rgba(102,114,101,.055);
+    font-weight:700;
+    pointer-events:none;
+  }
+  .eyebrow{font-size:12px;letter-spacing:.19em;text-transform:uppercase;color:var(--sage);font-weight:700}
+  h1{font-family:Georgia,"Times New Roman",serif;font-size:clamp(42px,7vw,76px);line-height:.95;margin:14px 0 18px;font-weight:500}
+  .sub{max-width:650px;color:var(--muted);font-size:17px}
+  .hero-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+  .pill{padding:9px 13px;border-radius:999px;background:var(--cream);border:1px solid var(--line);font-size:13px;color:#5f5d58}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 0}
+  .toolbar button{box-shadow:0 5px 16px rgba(32,33,31,.12)}
+  button{
+    appearance:none;border:0;border-radius:999px;padding:11px 16px;font-weight:700;cursor:pointer;
+    background:var(--ink);color:#fff;font-size:13px;
+  }
+  button.secondary{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .section{margin-top:26px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .card{
+    background:rgba(255,253,248,.88);
+    border:1px solid rgba(120,112,100,.15);
+    border-radius:var(--radius);
+    padding:24px;
+    box-shadow:0 10px 32px rgba(53,48,42,.06);
+  }
+  .card h2,.card h3{margin-top:0}
+  .card h2{font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:29px;margin-bottom:14px}
+  .party-list{display:grid;gap:12px}
+  .party{display:flex;gap:12px;align-items:flex-start;padding:13px;border-radius:16px;background:#faf7f1}
+  .dot{width:11px;height:11px;border-radius:50%;margin-top:7px;background:var(--rose);flex:0 0 auto}
+  .party:nth-child(2) .dot{background:#8ba08b}.party:nth-child(3) .dot{background:#aa9b7c}.party:nth-child(4) .dot{background:#7f8fa8}
+  .party strong{display:block}.small{font-size:13px;color:var(--muted)}
+  .itinerary{display:grid;gap:18px}
+  .day{
+    display:grid;grid-template-columns:170px 1fr;gap:24px;
+    background:rgba(255,253,248,.92);border:1px solid rgba(120,112,100,.15);border-radius:26px;padding:26px;
+    box-shadow:0 10px 32px rgba(53,48,42,.06)
+  }
+  .datebox{padding-right:18px;border-right:1px solid var(--line)}
+  .dow{text-transform:uppercase;letter-spacing:.16em;font-size:11px;color:var(--sage);font-weight:800}
+  .date{font-family:Georgia,"Times New Roman",serif;font-size:46px;line-height:1;margin:6px 0}
+  .month{font-size:13px;color:var(--muted)}
+  .day h3{font-family:Georgia,"Times New Roman",serif;font-size:28px;font-weight:500;margin:0 0 12px}
+  .flow{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+  .stop{background:var(--sage-soft);color:#3d4b3f;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:700}
+  .stop.rose{background:var(--rose-soft);color:#75514f}
+  ul{margin:9px 0 0;padding-left:18px}.note{margin-top:12px;padding:12px 14px;background:#f7f2ea;border-left:3px solid var(--rose);border-radius:10px;color:#5f5b55}
+  .hotel{background:linear-gradient(135deg,#e7ebe5,#f4ece8)}
+  .hotel .rooms{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:rgba(255,255,255,.62);padding:10px 12px;border-radius:12px;display:inline-block;margin-top:7px}
+  .footer{text-align:center;color:var(--muted);font-size:12px;margin-top:28px}
+  [contenteditable="true"]{outline:none;border-radius:6px;transition:.15s}
+  [contenteditable="true"]:focus{background:rgba(255,235,188,.35);box-shadow:0 0 0 3px rgba(211,176,103,.14)}
+  .edit-hint{font-size:12px;color:var(--muted);margin-top:8px}
+  @media(max-width:760px){
+    .hero{padding:30px 24px}.hero:after{font-size:72px}
+    .grid{grid-template-columns:1fr}.day{grid-template-columns:1fr;gap:14px}.datebox{border-right:0;border-bottom:1px solid var(--line);padding:0 0 14px}.date{font-size:38px}
+  }
+  @page{size:A4;margin:12mm}
+  @media print{
+    button,.edit-hint{display:none!important}
+    body{background:white;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .wrap{max-width:none;padding:0}
+    .hero,.card,.day{box-shadow:none}
+    .hero{break-inside:avoid;margin-bottom:12px}
+    .card,.day{break-inside:avoid;page-break-inside:avoid}
+    .section{margin-top:14px}
+    .day{margin-bottom:0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow" contenteditable="true">Friends &amp; family escape</div>
+    <h1 contenteditable="true">Seoul, together.</h1>
+    <div class="sub" contenteditable="true">Five days of cafés, shopping, Seoul neighborhoods, a little beauty maintenance, and just enough swimming to keep the children happy.</div>
+    <div class="hero-meta">
+      <div class="pill" contenteditable="true">Oct 2–6, 2026</div>
+      <div class="pill" contenteditable="true">Seoul, South Korea</div>
+      <div class="pill" contenteditable="true">Susan · Loubna · Gloria · Hyeyeon + families</div>
+    </div>
+    <div class="toolbar">
+      <button onclick="window.print()">Save as PDF</button>
+      <button class="secondary" onclick="downloadHTML()">Download editable HTML</button>
+      <button class="secondary" onclick="copyShare()">Copy page text</button>
+      <button class="secondary" onclick="resetEdits()">Reset edits</button>
+    </div>
+    <div class="edit-hint">Click any text to edit it. Your current edits are included when you choose <strong>Download editable HTML</strong> or <strong>Save as PDF</strong>.</div>
+  </header>
+
+  <section class="section grid">
+    <div class="card">
+      <h2 contenteditable="true">Who’s where</h2>
+      <div class="party-list">
+        <div class="party"><span class="dot"></span><div><strong contenteditable="true">Susan’s family</strong><div class="small" contenteditable="true">Grand Hyatt Seoul · arrives Oct 2 · MU5041 PVG 09:10 → ICN 11:55</div></div></div>
+        <div class="party"><span class="dot"></span><div><strong contenteditable="true">Loubna’s family</strong><div class="small" contenteditable="true">Grand Hyatt Seoul · arrives Oct 3</div></div></div>
+        <div class="party"><span class="dot"></span><div><strong contenteditable="true">Gloria’s family</strong><div class="small" contenteditable="true">Josun · arrives Oct 3 · MU511 SHA 08:05 → GMP 11:00</div></div></div>
+        <div class="party"><span class="dot"></span><div><strong contenteditable="true">Hyeyeon’s family</strong><div class="small" contenteditable="true">Lives in Seoul · our local guide 💅</div></div></div>
+      </div>
+    </div>
+    <div class="card hotel">
+      <h2 contenteditable="true">Grand Hyatt room note</h2>
+      <div contenteditable="true">Adjacent / connecting room request has been sent for Susan &amp; Loubna. Awaiting hotel confirmation.</div>
+      <div class="small" style="margin-top:10px" contenteditable="true">Status: awaiting reply</div>
+    </div>
+  </section>
+
+  <section class="section grid">
+    <div class="card">
+      <h2 contenteditable="true">Susan · flights</h2>
+      <div class="small" contenteditable="true">Fri Oct 2 · China Eastern MU5041</div>
+      <div style="font-size:20px;font-weight:700;margin:8px 0" contenteditable="true">PVG T1 09:10 → ICN T1 11:55</div>
+      <div class="small" contenteditable="true">Tue Oct 6 · Seoul → Shanghai · 16:20–17:30</div>
+      <div class="note" style="margin-top:10px" contenteditable="true">Return airport and flight number are not visible in the screenshot yet.</div>
+    </div>
+    <div class="card">
+      <h2 contenteditable="true">Gloria · flights</h2>
+      <div class="small" contenteditable="true">Sat Oct 3 · China Eastern MU511</div>
+      <div style="font-size:20px;font-weight:700;margin:8px 0" contenteditable="true">SHA 08:05 → GMP 11:00</div>
+      <div class="small" contenteditable="true">Tue Oct 6 · China Eastern MU512</div>
+      <div style="font-size:20px;font-weight:700;margin:8px 0" contenteditable="true">GMP 12:00 → SHA 12:55</div>
+    </div>
+  </section>
+
+  <section class="section itinerary">
+    <article class="day">
+      <div class="datebox"><div class="dow" contenteditable="true">Friday</div><div class="date" contenteditable="true">02</div><div class="month" contenteditable="true">October 2026</div></div>
+      <div><h3 contenteditable="true">Susan arrives · soft landing</h3>
+        <div class="flow"><span class="stop" contenteditable="true">Grand Hyatt check-in</span><span class="stop rose" contenteditable="true">Itaewon / Hannam dinner</span></div>
+        <ul>
+          <li contenteditable="true">Susan’s family: MU5041 from Shanghai Pudong (PVG T1) 09:10 → Incheon (ICN T1) 11:55.</li>
+          <li contenteditable="true">Transfer to Grand Hyatt Seoul; check-in is after 3:00 PM.</li>
+          <li contenteditable="true">Keep dinner easy and close to the hotel — Itaewon or Hannam.</li>
+          <li contenteditable="true">Gloria and Loubna arrive the following day.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="day">
+      <div class="datebox"><div class="dow" contenteditable="true">Saturday</div><div class="date" contenteditable="true">03</div><div class="month" contenteditable="true">October 2026</div></div>
+      <div><h3 contenteditable="true">Day 1 · full group</h3>
+        <div class="flow"><span class="stop" contenteditable="true">Onion café</span><span class="stop" contenteditable="true">Seoul Forest</span><span class="stop" contenteditable="true">Seongsu</span><span class="stop rose" contenteditable="true">Grand Hyatt swim</span><span class="stop rose" contenteditable="true">Dinner</span></div>
+        <ul>
+          <li contenteditable="true">Loubna arrives and checks in at Grand Hyatt Seoul.</li>
+          <li contenteditable="true">Gloria’s family: MU511 from Shanghai Hongqiao (SHA) 08:05 → Gimpo (GMP) 11:00, then checks in at Josun.</li>
+          <li contenteditable="true">Meet when everyone is ready; Hyeyeon guides the day.</li>
+          <li contenteditable="true">Gloria meets the group at Onion / Seongsu rather than shuttling between Josun and Grand Hyatt.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="day">
+      <div class="datebox"><div class="dow" contenteditable="true">Sunday</div><div class="date" contenteditable="true">04</div><div class="month" contenteditable="true">October 2026</div></div>
+      <div><h3 contenteditable="true">Day 2 · bakery + Apgujeong</h3>
+        <div class="flow"><span class="stop" contenteditable="true">Flourisen bakery</span><span class="stop" contenteditable="true">Apgujeong shopping</span><span class="stop rose" contenteditable="true">Dinner</span></div>
+        <ul>
+          <li contenteditable="true">Start with Flourisen bakery.</li>
+          <li contenteditable="true">Spend the day shopping and wandering in Apgujeong.</li>
+        </ul>
+        <div class="note" contenteditable="true">Easy meet-up day for Gloria since Apgujeong is closer to Josun.</div>
+      </div>
+    </article>
+
+    <article class="day">
+      <div class="datebox"><div class="dow" contenteditable="true">Monday</div><div class="date" contenteditable="true">05</div><div class="month" contenteditable="true">October 2026</div></div>
+      <div><h3 contenteditable="true">Clinic day</h3>
+        <div class="flow"><span class="stop rose" contenteditable="true">Morning clinic</span><span class="stop" contenteditable="true">Apgujeong lunch</span><span class="stop" contenteditable="true">Optional dinner</span></div>
+        <ul>
+          <li contenteditable="true">Morning: clinic — confirm who’s joining.</li>
+          <li contenteditable="true">Lunch in Apgujeong.</li>
+          <li contenteditable="true">Optional dinner: Apgujeong Sanghoe (opens 17:00).</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="day">
+      <div class="datebox"><div class="dow" contenteditable="true">Tuesday</div><div class="date" contenteditable="true">06</div><div class="month" contenteditable="true">October 2026</div></div>
+      <div><h3 contenteditable="true">Departure</h3>
+        <div class="flow"><span class="stop" contenteditable="true">Breakfast</span><span class="stop" contenteditable="true">Checkout</span><span class="stop rose" contenteditable="true">GMP / Seoul airport</span></div>
+        <ul>
+          <li contenteditable="true">Breakfast and pack up.</li>
+          <li contenteditable="true">Checkout by 11:00 AM.</li>
+          <li contenteditable="true">Gloria: MU512 departs GMP at 12:00 → SHA 12:55, so she needs the earlier airport departure.</li>
+          <li contenteditable="true">Susan: Seoul → Shanghai departs 16:20 and arrives 17:30. Return airport / flight number still to confirm from the expanded booking details.</li>
+        </ul>
+      </div>
+    </article>
+  </section>
+
+  <div class="footer" contenteditable="true">Seoul · Oct 2–6, 2026 · made for the group chat ✨</div>
+</div>
+<script>
+function downloadHTML(){
+  const clone=document.documentElement.cloneNode(true);
+  // Remove temporary focus state only; keep all editable content and controls.
+  clone.querySelectorAll('[contenteditable=true]').forEach(el=>el.removeAttribute('spellcheck'));
+  const html='<!DOCTYPE html>\n'+clone.outerHTML;
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='Seoul_Trip_Oct_2-6_2026_EDITABLE.html';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function copyShare(){
+  const clone=document.body.cloneNode(true);
+  clone.querySelectorAll('button,.edit-hint').forEach(el=>el.remove());
+  navigator.clipboard.writeText(clone.innerText.trim()).then(()=>{
+    const btn=[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Copy'));
+    if(btn){const old=btn.textContent;btn.textContent='Copied ✓';setTimeout(()=>btn.textContent=old,1400)}
+  });
+}
+
+// Autosave: edits persist in this browser only (localStorage).
+const SAVE_KEY='seoul-trip-edits-v1';
+function editables(){return [...document.querySelectorAll('[contenteditable="true"]')];}
+function saveEdits(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(editables().map(el=>el.innerHTML)));}catch(e){}
+}
+function restoreEdits(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+    const els=editables();
+    if(Array.isArray(saved)&&saved.length===els.length){els.forEach((el,i)=>{el.innerHTML=saved[i];});}
+  }catch(e){}
+}
+function resetEdits(){
+  if(!confirm('Discard your saved edits and go back to the published version?'))return;
+  try{localStorage.removeItem(SAVE_KEY);}catch(e){}
+  location.reload();
+}
+restoreEdits();
+document.addEventListener('input',e=>{if(e.target.closest&&e.target.closest('[contenteditable="true"]'))saveEdits();});
+</script>
+
+
+</body></html>
